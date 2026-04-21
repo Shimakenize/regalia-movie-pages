@@ -6,8 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.18[63bfc09]" />
-  <title>FC.REGALIA JY 6期生 動画一覧 (v1.0.18[63bfc09])</title>
+  <meta name="regalia-ui-version" content="v1.0.19[c02848f]" />
+  <title>動画ライブラリ 一覧 (v1.0.19[c02848f])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -35,7 +35,7 @@
       try {
         window.__UI_VERSION__ = raw;
       } catch (e0) {}
-      var base = 'FC.REGALIA JY 6期生 動画一覧 (' + raw + ')';
+      var base = '動画ライブラリ 一覧 (' + raw + ')';
       window.__REGALIA_TARGET_TITLE__ = base;
       window.__REGALIA_HEADER_BUILD__ = '(' + raw + ')';
       tick();
@@ -286,7 +286,7 @@
       <div class="app-header-logo">
         <span class="app-header-icon" aria-hidden="true"></span>
         <div class="app-header-text">
-          <div class="app-header-title">FC.REGALIA JY 6期生</div>
+          <div class="app-header-title">動画ライブラリ</div>
           <div class="app-header-sub">動画一覧</div>
           <div class="app-header-build" id="regalia-header-build" aria-live="polite"></div>
         </div>
@@ -352,9 +352,9 @@
       <span class="app-footer-dots">
         <span class="dot dot-accent"></span>
       </span>
-      <span>FC.REGALIA JY 6期生 動画ギャラリー</span>
+      <span>動画ライブラリ</span>
     </div>
-    <div class="app-footer-copy">©2026 FC.REGALIA. All rights reserved.</div>
+    <div class="app-footer-copy">© 2026</div>
   </footer>
 
   <script>
@@ -370,7 +370,7 @@
       }
       if (!window.__REGALIA_TARGET_TITLE__ && window.__UI_VERSION__) {
         window.__REGALIA_TARGET_TITLE__ =
-          'FC.REGALIA JY 6期生 動画一覧 (' + window.__UI_VERSION__ + ')';
+          '動画ライブラリ 一覧 (' + window.__UI_VERSION__ + ')';
       }
       var t = document.querySelector('title');
       if (t && window.__REGALIA_TARGET_TITLE__) {
@@ -741,8 +741,8 @@
       var apiLabel = cfg && (cfg.gas_label || cfg.app_version) ? String(cfg.gas_label || cfg.app_version) : '';
       var next =
         apiLabel
-          ? 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ' · API ' + apiLabel + ')'
-          : 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ')';
+          ? '動画ライブラリ 一覧 (' + ui + ' · API ' + apiLabel + ')'
+          : '動画ライブラリ 一覧 (' + ui + ')';
       window.__REGALIA_TARGET_TITLE__ = next;
       window.__REGALIA_HEADER_BUILD__ = apiLabel
         ? '(' + ui + ' · API ' + apiLabel + ')'
