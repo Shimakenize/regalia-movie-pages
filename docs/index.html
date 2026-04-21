@@ -6,8 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script>window.v1.0.8[aea9248] = 'v1.0.8[aea9248]';</script>
-  <title>FC.REGALIA JY 6期生 動画一覧 (v1.0.8[aea9248])</title>
+  <meta name="regalia-ui-version" content="v1.0.10[f03075e]" />
+  <title>FC.REGALIA JY 6期生 動画一覧 (v1.0.10[f03075e])</title>
   <style>
     * { box-sizing: border-box; }
     html { height: 100%; }
@@ -298,6 +298,20 @@
 
   <script>
     window.__CONFIG_URL__ = 'https://script.google.com/macros/s/AKfycbwSuosCBXhXoxF6Hk0_YIq9wov7NQetqfYf_qUZVfoxxWWSs-N0ad3dHWVz3CrWul8/exec';
+    (function () {
+      var m = document.querySelector('meta[name="regalia-ui-version"]');
+      var raw = m && m.getAttribute('content') ? String(m.getAttribute('content')).trim() : '';
+      if (raw === 'v1.0.10[f03075e]' || !raw) {
+        window.v1.0.10[f03075e] = 'v0.0.0[local]';
+      } else {
+        window.v1.0.10[f03075e] = raw;
+      }
+      var t = document.querySelector('title');
+      if (t && window.v1.0.10[f03075e]) {
+        t.textContent = 'FC.REGALIA JY 6期生 動画一覧 (' + window.v1.0.10[f03075e] + ')';
+        document.title = t.textContent;
+      }
+    })();
     var allData = [];
     var filteredData = [];
     var PAGE_SIZE = 50;
@@ -651,15 +665,24 @@
 
     function applyDocumentTitle(cfg) {
       var ui =
-        typeof window.v1.0.8[aea9248] !== 'undefined' && String(window.v1.0.8[aea9248] || '').trim()
-          ? String(window.v1.0.8[aea9248]).trim()
+        typeof window.v1.0.10[f03075e] !== 'undefined' && String(window.v1.0.10[f03075e] || '').trim()
+          ? String(window.v1.0.10[f03075e]).trim()
           : 'v0.0.0[local]';
       var apiLabel = cfg && (cfg.gas_label || cfg.app_version) ? String(cfg.gas_label || cfg.app_version) : '';
-      if (apiLabel) {
-        document.title = 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ' · API ' + apiLabel + ')';
-      } else {
-        document.title = 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ')';
+      var next =
+        apiLabel
+          ? 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ' · API ' + apiLabel + ')'
+          : 'FC.REGALIA JY 6期生 動画一覧 (' + ui + ')';
+      document.title = next;
+      var t = document.querySelector('title');
+      if (t) {
+        t.textContent = next;
       }
+    }
+
+    function showLoadingMessage(msg) {
+      document.getElementById('content').innerHTML =
+        '<div class="loading">' + escapeHtml(msg || '読み込み中...') + '</div>';
     }
 
     function apiErrorText(res) {
@@ -686,7 +709,11 @@
         })
         .then(function(res) {
           if (res && res.ok) {
-            bootstrapData(res.rows || []);
+            try {
+              bootstrapData(res.rows || []);
+            } catch (e) {
+              showLoadError('データの表示に失敗しました: ' + String(e && e.message ? e.message : e));
+            }
           } else {
             showLoadError(apiErrorText(res));
           }
@@ -704,7 +731,17 @@
       }
       return fetch(b + '?_path=config', { credentials: 'omit' })
         .then(function(res) {
-          return res.json();
+          if (!res.ok) {
+            throw new Error('config HTTP ' + res.status);
+          }
+          return res.text();
+        })
+        .then(function(txt) {
+          try {
+            return JSON.parse(txt);
+          } catch (e) {
+            throw new Error('config が JSON ではありません: ' + String(txt).slice(0, 120));
+          }
         })
         .then(function(cfg) {
           applyDocumentTitle(cfg || {});
@@ -723,10 +760,15 @@
             })
             .then(function() {
               if (!liff.isLoggedIn()) {
+                showLoadingMessage(
+                  'LINE でログインします。完了後にこのページが戻らない場合は、再読み込みしてください。'
+                );
                 liff.login({ redirectUri: location.href.split('#')[0] });
                 return;
               }
-              return fetchSheetAfterAuth(liff.getIDToken());
+              return fetchSheetAfterAuth(
+                typeof liff.getIDToken === 'function' ? liff.getIDToken(true) || liff.getIDToken() || '' : ''
+              );
             })
             .catch(function(err) {
               showLoadError('LIFF の初期化に失敗しました: ' + (err && err.message ? err.message : String(err)));
