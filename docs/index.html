@@ -6,8 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.11[bb4a9da]" />
-  <title>FC.REGALIA JY 6期生 動画一覧 (v1.0.11[bb4a9da])</title>
+  <meta name="regalia-ui-version" content="v1.0.12[bb4a9da]" />
+  <title>FC.REGALIA JY 6期生 動画一覧 (v1.0.12[bb4a9da])</title>
   <style>
     * { box-sizing: border-box; }
     html { height: 100%; }
@@ -301,14 +301,14 @@
     (function () {
       var m = document.querySelector('meta[name="regalia-ui-version"]');
       var raw = m && m.getAttribute('content') ? String(m.getAttribute('content')).trim() : '';
-      if (raw === 'v1.0.11[bb4a9da]' || !raw) {
-        window.v1.0.11[bb4a9da] = 'v0.0.0[local]';
+      if (raw === 'v1.0.12[bb4a9da]' || !raw) {
+        window.v1.0.12[bb4a9da] = 'v0.0.0[local]';
       } else {
-        window.v1.0.11[bb4a9da] = raw;
+        window.v1.0.12[bb4a9da] = raw;
       }
       var t = document.querySelector('title');
-      if (t && window.v1.0.11[bb4a9da]) {
-        t.textContent = 'FC.REGALIA JY 6期生 動画一覧 (' + window.v1.0.11[bb4a9da] + ')';
+      if (t && window.v1.0.12[bb4a9da]) {
+        t.textContent = 'FC.REGALIA JY 6期生 動画一覧 (' + window.v1.0.12[bb4a9da] + ')';
         document.title = t.textContent;
       }
     })();
@@ -665,8 +665,8 @@
 
     function applyDocumentTitle(cfg) {
       var ui =
-        typeof window.v1.0.11[bb4a9da] !== 'undefined' && String(window.v1.0.11[bb4a9da] || '').trim()
-          ? String(window.v1.0.11[bb4a9da]).trim()
+        typeof window.v1.0.12[bb4a9da] !== 'undefined' && String(window.v1.0.12[bb4a9da] || '').trim()
+          ? String(window.v1.0.12[bb4a9da]).trim()
           : 'v0.0.0[local]';
       var apiLabel = cfg && (cfg.gas_label || cfg.app_version) ? String(cfg.gas_label || cfg.app_version) : '';
       var next =
