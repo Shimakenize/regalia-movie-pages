@@ -606,26 +606,49 @@
       return u.replace(/\/+$/, '');
     }
 
+    /** GAS Web アプリへ POST（form は CORS の「シンプルリクエスト」になりやすい） */
+    function postGasForm(fields) {
+      var b = apiBase();
+      if (!b) return Promise.reject(new Error('no api base'));
+      var body = new URLSearchParams();
+      Object.keys(fields).forEach(function(k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(b, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+        credentials: 'omit',
+      });
+    }
+
+    function apiErrorText(res) {
+      if (!res || typeof res !== 'object') return 'データを取得できませんでした。';
+      return (
+        res.message ||
+        res.error ||
+        (res.code ? '[' + res.code + '] ' : '') + 'データを取得できませんでした。'
+      );
+    }
+
     function fetchSheetAfterAuth(idToken) {
       var b = apiBase();
       if (!b) {
         showLoadError('GAS の URL が設定されていません（ビルド時に https://script.google.com/macros/s/AKfycbwSuosCBXhXoxF6Hk0_YIq9wov7NQetqfYf_qUZVfoxxWWSs-N0ad3dHWVz3CrWul8/exec を注入してください）。');
         return Promise.resolve();
       }
-      return fetch(b, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ _path: 'api/videos', id_token: idToken || '' }),
-        credentials: 'omit',
-      })
+      return postGasForm({ _path: 'api/videos', id_token: idToken || '' })
         .then(function(res) {
+          if (!res.ok) {
+            throw new Error('HTTP ' + res.status);
+          }
           return res.json();
         })
         .then(function(res) {
           if (res && res.ok) {
             bootstrapData(res.rows || []);
           } else {
-            showLoadError((res && res.message) || 'データを取得できませんでした。');
+            showLoadError(apiErrorText(res));
           }
         })
         .catch(function(err) {
@@ -682,21 +705,15 @@
       var opponent = document.getElementById('filterOpponent').value || '';
       var uploader = document.getElementById('filterUploader').value || '';
       var month = document.getElementById('filterUploadMonth').value || '';
-      var bb = apiBase();
-      if (bb) {
-        fetch(bb, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            _path: 'api/log-filter',
-            search: search,
-            grade: grade,
-            match: match,
-            opponent: opponent,
-            uploader: uploader,
-            month: month,
-          }),
-          credentials: 'omit',
+      if (apiBase()) {
+        postGasForm({
+          _path: 'api/log-filter',
+          search: search,
+          grade: grade,
+          match: match,
+          opponent: opponent,
+          uploader: uploader,
+          month: month,
         }).catch(function() {});
       }
     }
