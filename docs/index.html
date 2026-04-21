@@ -9,6 +9,7 @@
   <title>FC.REGALIA JY 6期生 動画一覧</title>
   <style>
     * { box-sizing: border-box; }
+    html { height: 100%; }
     body { font-family: sans-serif; margin: 0; background: #0f1419; color: #e5e7eb; font-size: 1rem; }
     .top-frame { background: #111827; border-bottom: 1px solid #233041; }
     /* 青ヘッダー */
@@ -123,14 +124,39 @@
       .toolbar-row-3 { flex-direction: column; align-items: stretch; }
       .toolbar-row-3 .buttons { justify-content: flex-end; }
     }
+    @media (max-width: 480px) {
+      .video-grid { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+    }
     @media (min-width: 769px) {
       .toolbar-row-1 .search-wrap { max-width: 480px; margin-bottom: 12px; }
       .toolbar-row-2 { margin-bottom: 12px; }
     }
-    /* GAS iframe 用 強制モバイル（フォント拡大・件数は右） */
-    body.force-mobile { margin: 0; padding: 0; font-size: 2.2rem; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    body.force-mobile .top-frame { flex-shrink: 0; border-bottom: 2px solid #ddd; overflow-y: auto; }
-    body.force-mobile .bottom-frame { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    /* GAS iframe 内など「親が別」かつ狭い画面向け（Pages 単体では付けない） */
+    body.force-mobile {
+      margin: 0;
+      padding: 0;
+      font-size: 2.2rem;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    body.force-mobile .top-frame {
+      flex-shrink: 0;
+      min-height: 0;
+      max-height: 50vh;
+      border-bottom: 2px solid #ddd;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    body.force-mobile .bottom-frame {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     body.force-mobile .app-header { padding: 16px 20px; }
     body.force-mobile .app-header-icon { width: 64px; height: 64px; }
     body.force-mobile .app-header-title { font-size: 2.6rem; }
@@ -751,8 +777,11 @@
     document.getElementById('btnReset').addEventListener('click', resetFilters);
 
     (function() {
-      var w = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
-      if (w <= 768) document.body.classList.add('force-mobile');
+      var w = window.innerWidth || (window.screen && window.screen.width) || 0;
+      /* iframe 埋め込み時のみ force-mobile（巨大フォント＋分割スクロール）。Pages/LIFF 単体は @media のみ。 */
+      if (w <= 768 && window.parent !== window) {
+        document.body.classList.add('force-mobile');
+      }
     })();
     init().catch(function(err) {
       showLoadError(String(err && err.message ? err.message : err));
