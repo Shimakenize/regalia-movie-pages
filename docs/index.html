@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Movie ToDo は GAS 側シート名 movies_app_todos（schedule の app_todos とは別） -->
 <html>
 <head>
   <meta charset="utf-8">
@@ -6,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.19[c02848f]" />
-  <title>動画ライブラリ 一覧 (v1.0.19[c02848f])</title>
+  <meta name="regalia-ui-version" content="v1.0.20[50a53d3]" />
+  <title>動画ライブラリ 一覧 (v1.0.20[50a53d3])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -94,6 +95,48 @@
       line-height: 1.35;
       word-break: break-all;
     }
+    .view-tabs {
+      display: flex; flex-wrap: wrap; align-items: stretch; gap: 0;
+      background: #111827; border-bottom: 1px solid #233041; padding: 0 8px;
+    }
+    .view-tab {
+      background: transparent; border: none; color: #94a3b8; padding: 11px 14px;
+      font-size: 0.88rem; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; font-family: inherit;
+    }
+    .view-tab:hover { color: #e5e7eb; }
+    .view-tab.active { color: #fff; border-bottom-color: #2ed3c6; font-weight: 600; }
+    .view-tab[hidden] { display: none !important; }
+    .todo-panel { margin: 0; padding: 14px 16px 24px; font-size: 0.88rem; color: #e5e7eb; max-width: 720px; }
+    .todo-header { margin-bottom: 14px; }
+    .todo-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .todo-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .todo-add-status { flex: 0 0 auto; min-width: 4.5em; color: #5eead4; font-size: 0.82rem; font-weight: 500; }
+    .todo-new-input {
+      flex: 1 1 200px; min-width: 160px; padding: 10px 12px; border-radius: 8px; border: 1px solid #2b4258;
+      background: #0b1220; color: #e5e7eb; font-size: 0.88rem; font-family: inherit;
+    }
+    .todo-list { border-top: 1px solid #233041; }
+    .todo-row {
+      display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid #1e293b;
+      min-height: 48px; box-sizing: border-box;
+    }
+    .todo-check {
+      flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #2ed3c6; background: transparent;
+      color: transparent; cursor: pointer; padding: 0; font-size: 0.75rem; line-height: 1; font-family: inherit;
+    }
+    .todo-check--done { background: #2ed3c6; color: #06212b; font-weight: 800; }
+    .todo-text { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+    .todo-text--done { opacity: 0.45; text-decoration: line-through; color: #94a3b8; }
+    .todo-del {
+      flex: 0 0 auto; border: none; background: transparent; color: #64748b; font-size: 1.25rem; line-height: 1;
+      cursor: pointer; padding: 4px 8px; font-family: inherit;
+    }
+    .todo-del:hover { color: #fca5a5; }
+    .todo-row--busy { opacity: 0.92; }
+    .todo-check:disabled { opacity: 0.55; cursor: wait; }
+    .todo-del:disabled { opacity: 0.4; cursor: wait; }
+    .todo-row-status { flex: 0 0 auto; min-width: 3.8em; font-size: 0.74rem; color: #5eead4; font-weight: 500; align-self: center; }
+    .todo-empty { padding: 20px 8px; color: #94a3b8; font-size: 0.86rem; }
     /* 検索・フィルタ（白エリア） */
     .toolbar-wrap { padding: 16px 20px; background: #111827; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 0; }
@@ -222,6 +265,7 @@
     body.force-mobile .app-header-title { font-size: 2.6rem; }
     body.force-mobile .app-header-sub { font-size: 1.4rem; }
     body.force-mobile .app-header-build { font-size: 1.35rem; margin-top: 8px; }
+    body.force-mobile .view-tab { font-size: 1.35rem; padding: 14px 16px; }
     body.force-mobile .toolbar-wrap { padding: 16px 20px; }
     body.force-mobile .search-wrap { min-height: 72px; font-size: 2.2rem; }
     body.force-mobile .search-wrap input { font-size: 2.2rem; padding: 20px 22px; }
@@ -292,7 +336,11 @@
         </div>
       </div>
     </header>
-    <div class="toolbar-wrap">
+    <div id="viewTabs" class="view-tabs" style="display:none;" role="tablist" aria-label="表示切替">
+      <button type="button" class="view-tab active" id="tabMovies" data-view="movies" role="tab" aria-selected="true">動画</button>
+      <button type="button" class="view-tab" id="tabTodo" data-view="todo" role="tab" aria-selected="false" hidden>ToDo</button>
+    </div>
+    <div class="toolbar-wrap" id="moviesToolbarWrap">
       <div class="toolbar">
         <div class="toolbar-row-1">
           <div class="search-wrap">
@@ -386,6 +434,7 @@
     var filteredData = [];
     var PAGE_SIZE = 50;
     var currentPage = 1;
+    var currentView = 'movies';
     var DISPLAY_ORDER = ['サムネイル','タイトル','URL','試合名','学年','対戦相手','投稿者','投稿年月','日付','概要'];
     var KEY_MAP = { Title:'タイトル', URL:'URL', Thumbnail:'サムネイル', FinalDate:'日付', Grade:'学年', MatchName:'試合名', Opponent:'対戦相手', Description:'概要' };
     function toYearMonth(s) {
@@ -733,6 +782,288 @@
       });
     }
 
+    function getIdTokenForApi_() {
+      try {
+        if (typeof liff !== 'undefined' && typeof liff.getIDToken === 'function') {
+          return liff.getIDToken() || '';
+        }
+      } catch (e0) {}
+      return '';
+    }
+
+    function postGasWithToken(fields) {
+      var f = {};
+      Object.keys(fields).forEach(function(k) {
+        f[k] = fields[k];
+      });
+      f.id_token = getIdTokenForApi_();
+      return postGasForm(f);
+    }
+
+    function buildTodoRowsHtml(todos) {
+      if (!todos || !todos.length) {
+        return '<div class="todo-empty">まだタスクはありません。下の入力から追加できます。</div>';
+      }
+      todos = todos.slice().sort(function(a, b) {
+        return (a.done ? 1 : 0) - (b.done ? 1 : 0);
+      });
+      var h = '';
+      var i;
+      for (i = 0; i < todos.length; i++) {
+        var t = todos[i];
+        var done = !!t.done;
+        h += '<div class="todo-row" data-todo-id="' + attrEsc(t.id) + '">';
+        h +=
+          '<button type="button" class="todo-check' +
+          (done ? ' todo-check--done' : '') +
+          '" data-todo-toggle="' +
+          attrEsc(t.id) +
+          '" aria-label="' +
+          (done ? '未完了に戻す' : '完了にする') +
+          '">';
+        if (done) h += '✓';
+        h += '</button>';
+        h += '<span class="todo-row-status" role="status" aria-live="polite"></span>';
+        h +=
+          '<span class="todo-text' +
+          (done ? ' todo-text--done' : '') +
+          '">' +
+          escapeHtml(t.text) +
+          '</span>';
+        h +=
+          '<button type="button" class="todo-del" data-todo-del="' +
+          attrEsc(t.id) +
+          '" aria-label="削除">×</button>';
+        h += '</div>';
+      }
+      return h;
+    }
+
+    function reloadTodoListMount() {
+      var mount = document.getElementById('todoListMount');
+      if (!mount) return Promise.resolve();
+      return postGasWithToken({ _path: 'api/admin/app-todos' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (!data.ok) throw new Error(data.message || data.error || '取得に失敗しました');
+          mount.innerHTML = buildTodoRowsHtml(data.todos || []);
+        })
+        .catch(function(e) {
+          mount.innerHTML = '<div class="error">' + escapeHtml(String(e.message || e)) + '</div>';
+        });
+    }
+
+    function todoPanelSubmitAdd() {
+      var inp = document.getElementById('todoNewInput');
+      var btn = document.getElementById('btnTodoAdd');
+      var statusEl = document.getElementById('todoAddStatus');
+      var tx = (inp && inp.value) || '';
+      tx = String(tx).trim();
+      if (!tx) {
+        alert('内容を入力してください');
+        return;
+      }
+      function setTodoAddBusy(on) {
+        if (statusEl) {
+          statusEl.textContent = on ? '更新中…' : '';
+          statusEl.setAttribute('aria-busy', on ? 'true' : 'false');
+        }
+        if (btn) btn.disabled = !!on;
+        if (inp) inp.disabled = !!on;
+      }
+      setTodoAddBusy(true);
+      postGasWithToken({ _path: 'api/admin/app-todo-create', text: tx })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (!data.ok) throw new Error(data.message || data.error || '追加に失敗しました');
+          if (inp) inp.value = '';
+          return reloadTodoListMount();
+        })
+        .catch(function(e) {
+          alert(String(e.message || e));
+        })
+        .then(function() {
+          setTodoAddBusy(false);
+        });
+    }
+
+    function showTodoPanel() {
+      var el = document.getElementById('content');
+      el.innerHTML =
+        '<div class="todo-panel">' +
+        '<div class="todo-header">' +
+        '<h2 class="todo-title">ToDo</h2>' +
+        '</div>' +
+        '<div class="todo-toolbar">' +
+        '<input type="text" id="todoNewInput" class="todo-new-input" placeholder="新しいタスク…" />' +
+        '<button type="button" class="btn btn-primary" id="btnTodoAdd">追加</button>' +
+        '<span id="todoAddStatus" class="todo-add-status" role="status" aria-live="polite" aria-busy="false"></span>' +
+        '</div>' +
+        '<div id="todoListMount" class="todo-list">読み込み中…</div></div>';
+      var btnAdd = document.getElementById('btnTodoAdd');
+      if (btnAdd) btnAdd.addEventListener('click', todoPanelSubmitAdd);
+      var inp0 = document.getElementById('todoNewInput');
+      if (inp0) {
+        inp0.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Enter') todoPanelSubmitAdd();
+        });
+      }
+      var mount = document.getElementById('todoListMount');
+      if (mount) {
+        mount.addEventListener('click', function(ev) {
+          var tg = ev.target.closest ? ev.target.closest('[data-todo-toggle]') : null;
+          var del = ev.target.closest ? ev.target.closest('[data-todo-del]') : null;
+          if (tg) {
+            if (tg.disabled) return;
+            var id = tg.getAttribute('data-todo-toggle');
+            var isDone = tg.classList.contains('todo-check--done');
+            var row = tg.closest ? tg.closest('.todo-row') : null;
+            var st = row && row.querySelector('.todo-row-status');
+            var delBtn = row && row.querySelector('[data-todo-del]');
+            tg.disabled = true;
+            if (delBtn) delBtn.disabled = true;
+            if (row) row.classList.add('todo-row--busy');
+            if (st) st.textContent = '更新中…';
+            postGasWithToken({
+              _path: 'api/admin/app-todo-update',
+              id: id,
+              done: String(!isDone),
+            })
+              .then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+              })
+              .then(function(data) {
+                if (!data.ok) throw new Error(data.message || data.error || '更新に失敗しました');
+                return reloadTodoListMount();
+              })
+              .catch(function(e) {
+                alert(String(e.message || e));
+                tg.disabled = false;
+                if (delBtn) delBtn.disabled = false;
+                if (row) row.classList.remove('todo-row--busy');
+                if (st) st.textContent = '';
+              });
+            return;
+          }
+          if (del) {
+            if (del.disabled) return;
+            var did = del.getAttribute('data-todo-del');
+            if (!confirm('このタスクを削除しますか？')) return;
+            var rowD = del.closest ? del.closest('.todo-row') : null;
+            var stD = rowD && rowD.querySelector('.todo-row-status');
+            var chk = rowD && rowD.querySelector('[data-todo-toggle]');
+            del.disabled = true;
+            if (chk) chk.disabled = true;
+            if (rowD) rowD.classList.add('todo-row--busy');
+            if (stD) stD.textContent = '更新中…';
+            postGasWithToken({ _path: 'api/admin/app-todo-delete', id: did })
+              .then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+              })
+              .then(function(data) {
+                if (!data.ok) throw new Error(data.message || data.error || '削除に失敗しました');
+                return reloadTodoListMount();
+              })
+              .catch(function(e) {
+                alert(String(e.message || e));
+                del.disabled = false;
+                if (chk) chk.disabled = false;
+                if (rowD) rowD.classList.remove('todo-row--busy');
+                if (stD) stD.textContent = '';
+              });
+          }
+        });
+      }
+      reloadTodoListMount();
+    }
+
+    function applyMoviesView() {
+      currentView = 'movies';
+      var tb = document.getElementById('moviesToolbarWrap');
+      if (tb) tb.style.display = '';
+      var tm = document.getElementById('tabMovies');
+      var tt = document.getElementById('tabTodo');
+      if (tm) {
+        tm.classList.add('active');
+        tm.setAttribute('aria-selected', 'true');
+      }
+      if (tt) {
+        tt.classList.remove('active');
+        tt.setAttribute('aria-selected', 'false');
+      }
+      renderTable();
+    }
+
+    function applyTodoView() {
+      currentView = 'todo';
+      var tb = document.getElementById('moviesToolbarWrap');
+      if (tb) tb.style.display = 'none';
+      var tm = document.getElementById('tabMovies');
+      var tt = document.getElementById('tabTodo');
+      if (tm) {
+        tm.classList.remove('active');
+        tm.setAttribute('aria-selected', 'false');
+      }
+      if (tt) {
+        tt.classList.add('active');
+        tt.setAttribute('aria-selected', 'true');
+      }
+      showTodoPanel();
+    }
+
+    function applyView(view) {
+      if (view === 'todo') applyTodoView();
+      else applyMoviesView();
+    }
+
+    var viewTabsWired_ = false;
+    function setupViewTabs_() {
+      if (viewTabsWired_) return;
+      viewTabsWired_ = true;
+      var tabs = document.getElementById('viewTabs');
+      if (!tabs) return;
+      tabs.addEventListener('click', function(ev) {
+        var btn = ev.target.closest ? ev.target.closest('.view-tab') : null;
+        if (!btn || btn.hidden) return;
+        var v = btn.getAttribute('data-view');
+        if (v === 'todo' && (!window.__lastMe || !window.__lastMe.is_admin)) return;
+        if (v) applyView(v);
+      });
+    }
+
+    function maybeSetupTodoTabs_() {
+      var cfg = window.__REGALIA_CFG__ || {};
+      if (!cfg.lineAuthRequired) {
+        return Promise.resolve();
+      }
+      return postGasWithToken({ _path: 'auth/me' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(me) {
+          window.__lastMe = me;
+          if (me && me.ok && me.is_admin) {
+            var vt = document.getElementById('viewTabs');
+            var tabTodo = document.getElementById('tabTodo');
+            if (vt) vt.style.display = 'flex';
+            if (tabTodo) tabTodo.hidden = false;
+            setupViewTabs_();
+          }
+        })
+        .catch(function() {
+          window.__lastMe = { ok: false, is_admin: false };
+        });
+    }
+
     function applyDocumentTitle(cfg) {
       var ui =
         typeof window.__UI_VERSION__ !== 'undefined' && String(window.__UI_VERSION__ || '').trim()
@@ -841,6 +1172,9 @@
           } else {
             showLoadError(apiErrorText(res));
           }
+        })
+        .then(function() {
+          return maybeSetupTodoTabs_();
         })
         .catch(function(err) {
           showLoadError('読み込みに失敗しました: ' + String(err && err.message ? err.message : err));
