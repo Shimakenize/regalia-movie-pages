@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.20[50a53d3]" />
-  <title>動画ライブラリ 一覧 (v1.0.20[50a53d3])</title>
+  <meta name="regalia-ui-version" content="v1.0.21[e49c5c4]" />
+  <title>動画ライブラリ 一覧 (v1.0.21[e49c5c4])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -137,6 +137,25 @@
     .todo-del:disabled { opacity: 0.4; cursor: wait; }
     .todo-row-status { flex: 0 0 auto; min-width: 3.8em; font-size: 0.74rem; color: #5eead4; font-weight: 500; align-self: center; }
     .todo-empty { padding: 20px 8px; color: #94a3b8; font-size: 0.86rem; }
+
+    /* ダッシュボード */
+    .dashboard-panel { padding: 16px 20px 32px; color: #e5e7eb; max-width: 1200px; margin: 0 auto; }
+    .dash-header { margin-bottom: 20px; }
+    .dash-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; }
+    .dash-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .dash-stat { background: #111827; border: 1px solid #2b4258; border-radius: 10px; padding: 14px; text-align: center; }
+    .dash-stat-label { font-size: 0.8rem; color: #9ccce6; margin-bottom: 6px; }
+    .dash-stat-value { font-size: 1.6rem; font-weight: 700; color: #fff; }
+    .dash-stat-value.warn { color: #fca5a5; }
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .dash-card { background: #111827; border: 1px solid #233041; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .dash-card-header { background: #0b1220; padding: 12px 16px; border-bottom: 1px solid #233041; font-weight: 600; color: #e5e7eb; }
+    .dash-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 280px; flex: 1; }
+    .dash-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+    .dash-list li:last-child { border-bottom: none; }
+    .dash-list-key { color: #cbd5e1; word-break: break-all; padding-right: 12px; }
+    .dash-list-val { font-weight: 600; color: #2ed3c6; flex-shrink: 0; }
+
     /* 検索・フィルタ（白エリア） */
     .toolbar-wrap { padding: 16px 20px; background: #111827; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 0; }
@@ -300,6 +319,14 @@
     body.force-mobile .toolbar-row-3 .count { margin-right: 0; margin-left: auto; }
     body.force-mobile .page-nav { font-size: 1.2rem; padding: 20px; }
     body.force-mobile .page-nav .btn-nav { font-size: 1.2rem; min-height: 44px; padding: 10px 18px; }
+
+    body.force-mobile .dashboard-panel { padding: 20px; }
+    body.force-mobile .dash-title { font-size: 2rem; margin-bottom: 24px; }
+    body.force-mobile .dash-stat-label { font-size: 1.4rem; }
+    body.force-mobile .dash-stat-value { font-size: 2.8rem; }
+    body.force-mobile .dash-card-header { font-size: 1.6rem; padding: 16px 20px; }
+    body.force-mobile .dash-list li { font-size: 1.5rem; padding: 14px 20px; }
+    body.force-mobile .dash-list { max-height: 400px; }
     /* フッター */
     .app-footer {
       display: flex;
@@ -336,8 +363,9 @@
         </div>
       </div>
     </header>
-    <div id="viewTabs" class="view-tabs" style="display:none;" role="tablist" aria-label="表示切替">
+    <div id="viewTabs" class="view-tabs" role="tablist" aria-label="表示切替">
       <button type="button" class="view-tab active" id="tabMovies" data-view="movies" role="tab" aria-selected="true">動画</button>
+      <button type="button" class="view-tab" id="tabDashboard" data-view="dashboard" role="tab" aria-selected="false">ダッシュボード</button>
       <button type="button" class="view-tab" id="tabTodo" data-view="todo" role="tab" aria-selected="false" hidden>ToDo</button>
     </div>
     <div class="toolbar-wrap" id="moviesToolbarWrap">
@@ -985,20 +1013,127 @@
       reloadTodoListMount();
     }
 
+    function showDashboardPanel() {
+      var el = document.getElementById('content');
+      if (!allData || allData.length === 0) {
+        el.innerHTML = '<div class="dashboard-panel"><div class="dash-overview"><div class="dash-stat"><div class="dash-stat-label">動画データ</div><div class="dash-stat-value">0 件</div></div></div></div>';
+        return;
+      }
+
+      var counts = {
+        match: {}, opponent: {}, month: {}, uploader: {}, grade: {}
+      };
+      var unknownMatch = 0;
+      var unknownOpponent = 0;
+
+      for (var i = 0; i < allData.length; i++) {
+        var r = allData[i];
+        var m = r['試合名'] || '未設定';
+        var o = r['対戦相手'] || '未設定';
+        var mo = r['投稿年月'] || '未設定';
+        var u = r['投稿者'] || '未設定';
+        var g = r['学年'] || '未設定';
+
+        if (m === '不明') unknownMatch++;
+        if (o === '不明') unknownOpponent++;
+
+        counts.match[m] = (counts.match[m] || 0) + 1;
+        counts.opponent[o] = (counts.opponent[o] || 0) + 1;
+        counts.month[mo] = (counts.month[mo] || 0) + 1;
+        counts.uploader[u] = (counts.uploader[u] || 0) + 1;
+        counts.grade[g] = (counts.grade[g] || 0) + 1;
+      }
+
+      function toSortedArray(obj, sortMode) {
+        var arr = Object.keys(obj).map(function(k) { return { key: k, val: obj[k] }; });
+        arr.sort(function(a, b) {
+          if (sortMode === 'keyDesc') {
+            return a.key < b.key ? 1 : (a.key > b.key ? -1 : 0);
+          }
+          if (a.val !== b.val) return b.val - a.val;
+          return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+        });
+        return arr;
+      }
+
+      var sortedMatch = toSortedArray(counts.match);
+      var sortedOpponent = toSortedArray(counts.opponent);
+      var sortedMonth = toSortedArray(counts.month, 'keyDesc');
+      var sortedUploader = toSortedArray(counts.uploader);
+      var sortedGrade = toSortedArray(counts.grade);
+
+      function renderListItems(arr) {
+        var h = '';
+        for (var j = 0; j < arr.length; j++) {
+          h += '<li><span class="dash-list-key">' + escapeHtml(arr[j].key) + '</span><span class="dash-list-val">' + arr[j].val + '</span></li>';
+        }
+        return h;
+      }
+
+      var h = '<div class="dashboard-panel">';
+      h += '<div class="dash-header"><h2 class="dash-title">データサマリー</h2></div>';
+      
+      h += '<div class="dash-overview">';
+      h += '<div class="dash-stat"><div class="dash-stat-label">総動画数</div><div class="dash-stat-value">' + allData.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">試合名 種類</div><div class="dash-stat-value">' + sortedMatch.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">対戦相手 種類</div><div class="dash-stat-value">' + sortedOpponent.length + '</div></div>';
+      
+      if (unknownMatch > 0 || unknownOpponent > 0) {
+        h += '<div class="dash-stat"><div class="dash-stat-label">不明な試合名</div><div class="dash-stat-value warn">' + unknownMatch + '</div></div>';
+        h += '<div class="dash-stat"><div class="dash-stat-label">不明な対戦相手</div><div class="dash-stat-value warn">' + unknownOpponent + '</div></div>';
+      }
+      h += '</div>';
+
+      h += '<div class="dash-grid">';
+      
+      h += '<div class="dash-card"><div class="dash-card-header">試合名ごとの件数</div><ul class="dash-list">';
+      h += renderListItems(sortedMatch);
+      h += '</ul></div>';
+
+      h += '<div class="dash-card"><div class="dash-card-header">対戦相手ごとの件数</div><ul class="dash-list">';
+      h += renderListItems(sortedOpponent);
+      h += '</ul></div>';
+
+      h += '<div class="dash-card"><div class="dash-card-header">投稿年月ごとの件数</div><ul class="dash-list">';
+      h += renderListItems(sortedMonth);
+      h += '</ul></div>';
+
+      h += '<div class="dash-card"><div class="dash-card-header">投稿者ごとの件数</div><ul class="dash-list">';
+      h += renderListItems(sortedUploader);
+      h += '</ul></div>';
+
+      h += '<div class="dash-card"><div class="dash-card-header">学年ごとの件数</div><ul class="dash-list">';
+      h += renderListItems(sortedGrade);
+      h += '</ul></div>';
+
+      h += '</div></div>';
+
+      el.innerHTML = h;
+    }
+
+    function applyDashboardView() {
+      currentView = 'dashboard';
+      var tb = document.getElementById('moviesToolbarWrap');
+      if (tb) tb.style.display = 'none';
+      var tm = document.getElementById('tabMovies');
+      var td = document.getElementById('tabDashboard');
+      var tt = document.getElementById('tabTodo');
+      if (tm) { tm.classList.remove('active'); tm.setAttribute('aria-selected', 'false'); }
+      if (td) { td.classList.add('active'); td.setAttribute('aria-selected', 'true'); }
+      if (tt) { tt.classList.remove('active'); tt.setAttribute('aria-selected', 'false'); }
+      showDashboardPanel();
+    }
+
     function applyMoviesView() {
       currentView = 'movies';
       var tb = document.getElementById('moviesToolbarWrap');
       if (tb) tb.style.display = '';
       var tm = document.getElementById('tabMovies');
+      var td = document.getElementById('tabDashboard');
       var tt = document.getElementById('tabTodo');
-      if (tm) {
-        tm.classList.add('active');
-        tm.setAttribute('aria-selected', 'true');
-      }
-      if (tt) {
-        tt.classList.remove('active');
-        tt.setAttribute('aria-selected', 'false');
-      }
+      if (tm) { tm.classList.add('active'); tm.setAttribute('aria-selected', 'true'); }
+      if (td) { td.classList.remove('active'); td.setAttribute('aria-selected', 'false'); }
+      if (tt) { tt.classList.remove('active'); tt.setAttribute('aria-selected', 'false'); }
       renderTable();
     }
 
@@ -1007,20 +1142,17 @@
       var tb = document.getElementById('moviesToolbarWrap');
       if (tb) tb.style.display = 'none';
       var tm = document.getElementById('tabMovies');
+      var td = document.getElementById('tabDashboard');
       var tt = document.getElementById('tabTodo');
-      if (tm) {
-        tm.classList.remove('active');
-        tm.setAttribute('aria-selected', 'false');
-      }
-      if (tt) {
-        tt.classList.add('active');
-        tt.setAttribute('aria-selected', 'true');
-      }
+      if (tm) { tm.classList.remove('active'); tm.setAttribute('aria-selected', 'false'); }
+      if (td) { td.classList.remove('active'); td.setAttribute('aria-selected', 'false'); }
+      if (tt) { tt.classList.add('active'); tt.setAttribute('aria-selected', 'true'); }
       showTodoPanel();
     }
 
     function applyView(view) {
       if (view === 'todo') applyTodoView();
+      else if (view === 'dashboard') applyDashboardView();
       else applyMoviesView();
     }
 
@@ -1038,6 +1170,9 @@
         if (v) applyView(v);
       });
     }
+
+    // ダッシュボードと動画タブは常時有効化するため、認証の有無に関わらず実行されるように調整
+    setupViewTabs_();
 
     function maybeSetupTodoTabs_() {
       var cfg = window.__REGALIA_CFG__ || {};
