@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.24[bf4568d]" />
-  <title>動画ライブラリ 一覧 (v1.0.24[bf4568d])</title>
+  <meta name="regalia-ui-version" content="v1.0.25[26cec5f]" />
+  <title>動画ライブラリ 一覧 (v1.0.25[26cec5f])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -139,8 +139,8 @@
     .todo-empty { padding: 20px 8px; color: #94a3b8; font-size: 0.86rem; }
 
     /* ダッシュボード */
-    .dashboard-panel { padding: 16px 20px 32px; color: #e5e7eb; max-width: 1200px; margin: 0 auto; }
-    .dash-header { margin-bottom: 20px; }
+    .dashboard-panel { padding: 8px 12px 32px; color: #e5e7eb; max-width: 1200px; margin: 0 auto; }
+    .dash-header { margin-bottom: 12px; }
     .dash-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; }
     .dash-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
     .dash-stat { background: #111827; border: 1px solid #2b4258; border-radius: 10px; padding: 14px; text-align: center; }
@@ -259,6 +259,13 @@
       .toolbar-row-2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .toolbar-row-3 { flex-direction: column; align-items: stretch; }
       .toolbar-row-3 .buttons { justify-content: flex-end; }
+      
+      /* ダッシュボードのモバイル最適化 */
+      .dash-overview { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+      .dash-stat { padding: 10px 4px; text-align: center; }
+      .dash-stat-label { font-size: 0.75rem; margin-bottom: 2px; }
+      .dash-stat-value { font-size: 1.25rem; }
+      .dash-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 480px) {
       .video-grid { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
@@ -336,13 +343,12 @@
 
     body.force-mobile .dashboard-panel { padding: 20px; }
     body.force-mobile .dash-title { font-size: 2rem; margin-bottom: 24px; }
-    body.force-mobile .dash-overview { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    body.force-mobile .dash-overview { grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
     body.force-mobile .dash-stat {
-      padding: 8px 4px; text-align: center;
-      display: flex; flex-direction: column; justify-content: center;
+      padding: 12px 6px; text-align: center;
     }
-    body.force-mobile .dash-stat-label { font-size: 1.1rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    body.force-mobile .dash-stat-value { font-size: 1.8rem; }
+    body.force-mobile .dash-stat-label { font-size: 1.4rem; margin-bottom: 4px; }
+    body.force-mobile .dash-stat-value { font-size: 2.4rem; }
     body.force-mobile .dash-card-header { font-size: 1.6rem; padding: 16px 20px; }
     body.force-mobile .dash-list li { font-size: 1.5rem; }
     body.force-mobile .dash-item-btn { padding: 14px 20px; }
