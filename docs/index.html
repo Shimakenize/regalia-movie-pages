@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.22[8bca930]" />
-  <title>動画ライブラリ 一覧 (v1.0.22[8bca930])</title>
+  <meta name="regalia-ui-version" content="v1.0.23[b446bbc]" />
+  <title>動画ライブラリ 一覧 (v1.0.23[b446bbc])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -371,11 +371,11 @@
       </div>
     </header>
     <div id="viewTabs" class="view-tabs" role="tablist" aria-label="表示切替">
-      <button type="button" class="view-tab active" id="tabMovies" data-view="movies" role="tab" aria-selected="true">動画</button>
-      <button type="button" class="view-tab" id="tabDashboard" data-view="dashboard" role="tab" aria-selected="false">ダッシュボード</button>
+      <button type="button" class="view-tab active" id="tabDashboard" data-view="dashboard" role="tab" aria-selected="true">ダッシュボード</button>
+      <button type="button" class="view-tab" id="tabMovies" data-view="movies" role="tab" aria-selected="false">動画</button>
       <button type="button" class="view-tab" id="tabTodo" data-view="todo" role="tab" aria-selected="false" hidden>ToDo</button>
     </div>
-    <div class="toolbar-wrap" id="moviesToolbarWrap">
+    <div class="toolbar-wrap" id="moviesToolbarWrap" style="display: none;">
       <div class="toolbar">
         <div class="toolbar-row-1">
           <div class="search-wrap">
@@ -469,7 +469,7 @@
     var filteredData = [];
     var PAGE_SIZE = 50;
     var currentPage = 1;
-    var currentView = 'movies';
+    var currentView = 'dashboard';
     var DISPLAY_ORDER = ['サムネイル','タイトル','URL','試合名','学年','対戦相手','投稿者','投稿年月','日付','概要'];
     var KEY_MAP = { Title:'タイトル', URL:'URL', Thumbnail:'サムネイル', FinalDate:'日付', Grade:'学年', MatchName:'試合名', Opponent:'対戦相手', Description:'概要' };
     function toYearMonth(s) {
@@ -793,6 +793,7 @@
       filteredData = allData;
       fillFilters();
       applyFilters();
+      applyView(currentView);
     }
 
     function apiBase() {
