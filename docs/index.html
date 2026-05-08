@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.23[b446bbc]" />
-  <title>動画ライブラリ 一覧 (v1.0.23[b446bbc])</title>
+  <meta name="regalia-ui-version" content="v1.0.24[bf4568d]" />
+  <title>動画ライブラリ 一覧 (v1.0.24[bf4568d])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -157,10 +157,18 @@
       width: 100%; border: none; background: transparent; color: inherit;
       display: flex; justify-content: space-between; align-items: center;
       padding: 10px 16px; cursor: pointer; text-align: left; font: inherit;
+      border-radius: 6px; transition: background 0.2s;
     }
-    .dash-item-btn:hover { background: #0b1220; }
+    .dash-item-btn:hover { background: #1e293b; }
+    .dash-item-btn:active { background: #0f172a; }
     .dash-list-key { color: #cbd5e1; word-break: break-all; padding-right: 12px; }
-    .dash-list-val { font-weight: 600; color: #2ed3c6; flex-shrink: 0; }
+    .dash-list-val { font-weight: 600; color: #2ed3c6; flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+    .dash-list-val::after { content: '›'; font-size: 1.2rem; line-height: 1; color: #9ccce6; }
+
+    /* ダッシュボードから戻るボタン用 */
+    .back-to-dash-wrap { display: none; margin-bottom: 12px; }
+    .btn-back-dash { background: #1e293b; color: #e5e7eb; border: 1px solid #2b4258; font-weight: 600; width: 100%; justify-content: center; }
+    .btn-back-dash:hover { background: #2d3e50; }
 
     /* 検索・フィルタ（白エリア） */
     .toolbar-wrap { padding: 16px 20px; background: #111827; }
@@ -328,12 +336,19 @@
 
     body.force-mobile .dashboard-panel { padding: 20px; }
     body.force-mobile .dash-title { font-size: 2rem; margin-bottom: 24px; }
-    body.force-mobile .dash-stat-label { font-size: 1.4rem; }
-    body.force-mobile .dash-stat-value { font-size: 2.8rem; }
+    body.force-mobile .dash-overview { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    body.force-mobile .dash-stat {
+      padding: 8px 4px; text-align: center;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    body.force-mobile .dash-stat-label { font-size: 1.1rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.force-mobile .dash-stat-value { font-size: 1.8rem; }
     body.force-mobile .dash-card-header { font-size: 1.6rem; padding: 16px 20px; }
     body.force-mobile .dash-list li { font-size: 1.5rem; }
     body.force-mobile .dash-item-btn { padding: 14px 20px; }
     body.force-mobile .dash-list { max-height: 400px; }
+    body.force-mobile .back-to-dash-wrap { margin-bottom: 16px; }
+    body.force-mobile .btn-back-dash { min-height: 64px; font-size: 1.6rem; }
     /* フッター */
     .app-footer {
       display: flex;
@@ -376,6 +391,11 @@
       <button type="button" class="view-tab" id="tabTodo" data-view="todo" role="tab" aria-selected="false" hidden>ToDo</button>
     </div>
     <div class="toolbar-wrap" id="moviesToolbarWrap" style="display: none;">
+      <div id="backToDashWrap" class="back-to-dash-wrap">
+        <button type="button" class="btn btn-back-dash" id="btnBackToDash">
+          <span aria-hidden="true">«</span> ダッシュボードへ戻る
+        </button>
+      </div>
       <div class="toolbar">
         <div class="toolbar-row-1">
           <div class="search-wrap">
@@ -1082,13 +1102,13 @@
       h += '<div class="dash-header"><h2 class="dash-title">データサマリー</h2></div>';
       
       h += '<div class="dash-overview">';
-      h += '<div class="dash-stat"><div class="dash-stat-label">総動画数</div><div class="dash-stat-value">' + allData.length + '</div></div>';
-      h += '<div class="dash-stat"><div class="dash-stat-label">試合名 種類</div><div class="dash-stat-value">' + sortedMatch.length + '</div></div>';
-      h += '<div class="dash-stat"><div class="dash-stat-label">対戦相手 種類</div><div class="dash-stat-value">' + sortedOpponent.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">動画数</div><div class="dash-stat-value">' + allData.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">試合数</div><div class="dash-stat-value">' + sortedMatch.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">対戦相手</div><div class="dash-stat-value">' + sortedOpponent.length + '</div></div>';
       
       if (unknownMatch > 0 || unknownOpponent > 0) {
-        h += '<div class="dash-stat"><div class="dash-stat-label">不明な試合名</div><div class="dash-stat-value warn">' + unknownMatch + '</div></div>';
-        h += '<div class="dash-stat"><div class="dash-stat-label">不明な対戦相手</div><div class="dash-stat-value warn">' + unknownOpponent + '</div></div>';
+        h += '<div class="dash-stat"><div class="dash-stat-label">試合不明</div><div class="dash-stat-value warn">' + unknownMatch + '</div></div>';
+        h += '<div class="dash-stat"><div class="dash-stat-label">相手不明</div><div class="dash-stat-value warn">' + unknownOpponent + '</div></div>';
       }
       h += '</div>';
 
@@ -1139,6 +1159,8 @@
 
     function openMoviesByDashboardFilter(filterType, filterValue) {
       applyMoviesView();
+      var b = document.getElementById('backToDashWrap');
+      if (b) b.style.display = 'block';
       clearVideoFilters();
       fillFilters();
       var idMap = {
@@ -1158,6 +1180,8 @@
       currentView = 'dashboard';
       var tb = document.getElementById('moviesToolbarWrap');
       if (tb) tb.style.display = 'none';
+      var bw = document.getElementById('backToDashWrap');
+      if (bw) bw.style.display = 'none';
       var tm = document.getElementById('tabMovies');
       var td = document.getElementById('tabDashboard');
       var tt = document.getElementById('tabTodo');
@@ -1171,6 +1195,9 @@
       currentView = 'movies';
       var tb = document.getElementById('moviesToolbarWrap');
       if (tb) tb.style.display = '';
+      // タブからの直接遷移時は戻るボタンを消す。ダッシュボードからの遷移時は openMoviesByDashboardFilter で明示的に表示する。
+      var bw = document.getElementById('backToDashWrap');
+      if (bw) bw.style.display = 'none';
       var tm = document.getElementById('tabMovies');
       var td = document.getElementById('tabDashboard');
       var tt = document.getElementById('tabTodo');
@@ -1470,6 +1497,9 @@
     document.getElementById('filterUploader').addEventListener('change', runSearchAndFilter);
     document.getElementById('filterUploadMonth').addEventListener('change', runSearchAndFilter);
     document.getElementById('btnReset').addEventListener('click', resetFilters);
+    document.getElementById('btnBackToDash').addEventListener('click', function() {
+      applyDashboardView();
+    });
 
     (function() {
       var w = window.innerWidth || (window.screen && window.screen.width) || 0;
