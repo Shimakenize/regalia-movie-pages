@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.25[26cec5f]" />
-  <title>動画ライブラリ 一覧 (v1.0.25[26cec5f])</title>
+  <meta name="regalia-ui-version" content="v1.0.26[870f402]" />
+  <title>動画ライブラリ 一覧 (v1.0.26[870f402])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -417,7 +417,7 @@
             </select>
           </div>
           <div class="filter-item">
-            <label for="filterMatchName">試合名</label>
+            <label for="filterMatchName">試合種別</label>
             <select id="filterMatchName">
               <option value="">すべて</option>
             </select>
@@ -1109,7 +1109,7 @@
       
       h += '<div class="dash-overview">';
       h += '<div class="dash-stat"><div class="dash-stat-label">動画数</div><div class="dash-stat-value">' + allData.length + '</div></div>';
-      h += '<div class="dash-stat"><div class="dash-stat-label">試合数</div><div class="dash-stat-value">' + sortedMatch.length + '</div></div>';
+      h += '<div class="dash-stat"><div class="dash-stat-label">試合種別数</div><div class="dash-stat-value">' + sortedMatch.length + '</div></div>';
       h += '<div class="dash-stat"><div class="dash-stat-label">対戦相手</div><div class="dash-stat-value">' + sortedOpponent.length + '</div></div>';
       
       if (unknownMatch > 0 || unknownOpponent > 0) {
@@ -1120,7 +1120,7 @@
 
       h += '<div class="dash-grid">';
       
-      h += '<div class="dash-card"><div class="dash-card-header">試合名ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">試合種別ごとの件数</div><ul class="dash-list">';
       h += renderListItems(sortedMatch, 'match');
       h += '</ul></div>';
 
