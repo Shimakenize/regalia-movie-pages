@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.31[bd1f2d5]" />
-  <title>動画ライブラリ 一覧 (v1.0.31[bd1f2d5])</title>
+  <meta name="regalia-ui-version" content="v1.0.32[dbd7d11]" />
+  <title>動画ライブラリ 一覧 (v1.0.32[dbd7d11])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -1177,6 +1177,25 @@
       return escapeHtml(String(lineUserId || ''));
     }
 
+    var RELATION_BADGE_COLORS_ = {
+      '父': { bg: 'rgba(59,130,246,0.18)', fg: '#93c5fd' },
+      '母': { bg: 'rgba(244,114,182,0.18)', fg: '#f9a8d4' },
+      '選手': { bg: 'rgba(46,211,198,0.18)', fg: '#5eead4' },
+      'コーチ': { bg: 'rgba(251,146,60,0.18)', fg: '#fdba74' },
+      'その他': { bg: 'rgba(148,163,184,0.18)', fg: '#cbd5e1' },
+    };
+
+    /** 続柄（relation）を色分けバッジで表示。relation 未記録の旧データは kind にフォールバック */
+    function relationBadgeHtml_(relation, kind) {
+      var r = String(relation || kind || '').trim();
+      if (!r) return '';
+      var c = RELATION_BADGE_COLORS_[r] || RELATION_BADGE_COLORS_['その他'];
+      return (
+        '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;' +
+        'background:' + c.bg + ';color:' + c.fg + ';">' + escapeHtml(r) + '</span>'
+      );
+    }
+
     function showAccessDetail_(filters, title) {
       var ov = document.getElementById('access-detail-overlay');
       var body = document.getElementById('adModalBody');
@@ -1201,7 +1220,7 @@
                   return (
                     '<div class="ad-row"><div class="ad-row-main">' +
                     userLabelHtml_(r.bind_label, r.display_name, r.line_user_id) +
-                    ' <span style="color:#94a3b8;font-weight:400;">(' + escapeHtml(r.kind || '') + ')</span></div>' +
+                    ' ' + relationBadgeHtml_(r.relation, r.kind) + '</div>' +
                     '<div class="ad-row-sub">' + escapeHtml(String(r.accessed_at || '')) +
                     ' ・ ' + escapeHtml(String(r.path || '-')) + '</div></div>'
                   );
@@ -1300,7 +1319,7 @@
                   attrEsc(String(u.bind_label || u.display_name || u.line_user_id)) +
                   '" title="クリックで明細を表示" style="padding:10px 16px;">' +
                   '<div style="font-weight:600;">' + label +
-                  ' <span style="color:#94a3b8;font-weight:400;">(' + escapeHtml(u.kind || '') + ')</span></div>' +
+                  ' ' + relationBadgeHtml_(u.relation, u.kind) + '</div>' +
                   '<div style="font-size:0.78rem;color:#9ccce6;">最終アクセス: ' +
                   escapeHtml(u.last_accessed_at || '-') +
                   ' ・ 累計 ' + u.count + ' 回</div></li>'
