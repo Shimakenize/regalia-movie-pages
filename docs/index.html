@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.29[bc979c7]" />
-  <title>動画ライブラリ 一覧 (v1.0.29[bc979c7])</title>
+  <meta name="regalia-ui-version" content="v1.0.30[e758577]" />
+  <title>動画ライブラリ 一覧 (v1.0.30[e758577])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -1306,23 +1306,23 @@
 
       h += '<div class="dash-grid">';
       
-      h += '<div class="dash-card"><div class="dash-card-header">試合種別ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">試合種別フィルタ</div><ul class="dash-list">';
       h += renderListItems(sortedMatch, 'match');
       h += '</ul></div>';
 
-      h += '<div class="dash-card"><div class="dash-card-header">対戦相手ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">対戦相手フィルタ</div><ul class="dash-list">';
       h += renderListItems(sortedOpponent, 'opponent');
       h += '</ul></div>';
 
-      h += '<div class="dash-card"><div class="dash-card-header">投稿年月ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">投稿年月フィルタ</div><ul class="dash-list">';
       h += renderListItems(sortedMonth, 'uploadMonth');
       h += '</ul></div>';
 
-      h += '<div class="dash-card"><div class="dash-card-header">投稿者ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">投稿者フィルタ</div><ul class="dash-list">';
       h += renderListItems(sortedUploader, 'uploader');
       h += '</ul></div>';
 
-      h += '<div class="dash-card"><div class="dash-card-header">学年ごとの件数</div><ul class="dash-list">';
+      h += '<div class="dash-card"><div class="dash-card-header">学年フィルタ</div><ul class="dash-list">';
       h += renderListItems(sortedGrade, 'grade');
       h += '</ul></div>';
 
@@ -1645,7 +1645,7 @@
         '<div class="reg-prompt">選手を選択してください</div><div class="reg-badges" id="regBadges">読み込み中…</div>' +
         '<div class="reg-prompt">続柄</div><div class="reg-badges" id="regRelBadges"></div>';
       var relWrap = document.getElementById('regRelBadges');
-      relWrap.innerHTML = ['父', '母', 'その他'].map(function(r) {
+      relWrap.innerHTML = ['選手', '父', '母', 'その他'].map(function(r) {
         return '<div class="reg-badge" data-rel="' + attrEsc(r) + '">' + escapeHtml(r) + '</div>';
       }).join('');
       relWrap.addEventListener('click', function(ev) {
