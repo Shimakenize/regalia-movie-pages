@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.35[cf6b9f4]" />
-  <title>動画ライブラリ 一覧 (v1.0.35[cf6b9f4])</title>
+  <meta name="regalia-ui-version" content="v1.0.36[b175274]" />
+  <title>動画ライブラリ 一覧 (v1.0.36[b175274])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -855,6 +855,15 @@
       h += '<span class="card-date">📅 ' + escapeHtml(dateStr) + '</span></div></div></div>';
       return h;
     }
+    function buildPageNavHtml_(start, end, total, totalPages) {
+      return (
+        '<nav class="page-nav">' +
+        '<button type="button" class="btn btn-secondary btn-nav" data-page-action="prev" ' + (currentPage <= 1 ? 'disabled' : '') + '>前へ</button>' +
+        '<span class="page-info">' + (start + 1) + '-' + end + ' 件を表示（全 ' + total + ' 件）</span>' +
+        '<button type="button" class="btn btn-secondary btn-nav" data-page-action="next" ' + (currentPage >= totalPages ? 'disabled' : '') + '>次へ</button>' +
+        '</nav>'
+      );
+    }
     function renderPage() {
       var total = filteredData.length;
       var start = (currentPage - 1) * PAGE_SIZE;
@@ -865,21 +874,20 @@
       }
       gridHtml += '</div>';
       var navHtml = '';
+      var totalPages = Math.ceil(total / PAGE_SIZE);
       if (total > PAGE_SIZE) {
-        var totalPages = Math.ceil(total / PAGE_SIZE);
-        navHtml = '<nav class="page-nav">';
-        navHtml += '<button type="button" class="btn btn-secondary btn-nav" id="btnPrev" ' + (currentPage <= 1 ? 'disabled' : '') + '>前へ</button>';
-        navHtml += '<span class="page-info">' + (start + 1) + '-' + end + ' 件を表示（全 ' + total + ' 件）</span>';
-        navHtml += '<button type="button" class="btn btn-secondary btn-nav" id="btnNext" ' + (currentPage >= totalPages ? 'disabled' : '') + '>次へ</button>';
-        navHtml += '</nav>';
+        navHtml = buildPageNavHtml_(start, end, total, totalPages);
       }
-      document.getElementById('content').innerHTML = gridHtml + navHtml;
+      // 上下どちらからでもページ送りできるよう、ナビゲーションを上部・下部の両方に表示する
+      document.getElementById('content').innerHTML = navHtml + gridHtml + navHtml;
       if (total > PAGE_SIZE) {
-        document.getElementById('btnPrev').addEventListener('click', function() {
-          if (currentPage > 1) { currentPage--; renderPage(); }
-        });
-        document.getElementById('btnNext').addEventListener('click', function() {
-          if (currentPage < Math.ceil(total / PAGE_SIZE)) { currentPage++; renderPage(); }
+        var navButtons = document.querySelectorAll('#content [data-page-action]');
+        Array.prototype.forEach.call(navButtons, function(elm) {
+          elm.addEventListener('click', function() {
+            var action = elm.getAttribute('data-page-action');
+            if (action === 'prev' && currentPage > 1) { currentPage--; renderPage(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            if (action === 'next' && currentPage < totalPages) { currentPage++; renderPage(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+          });
         });
       }
     }
