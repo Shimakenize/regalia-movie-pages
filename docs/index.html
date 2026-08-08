@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.36[b175274]" />
-  <title>動画ライブラリ 一覧 (v1.0.36[b175274])</title>
+  <meta name="regalia-ui-version" content="v1.0.37[4d20c7c]" />
+  <title>動画ライブラリ 一覧 (v1.0.37[4d20c7c])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -1172,6 +1172,8 @@
     }
 
     function onUsersPanelClick_(ev) {
+      var checkbox = ev.target.closest ? ev.target.closest('.reg-log-check') : null;
+      if (checkbox) { toggleRegistrationLogReviewed_(checkbox); return; }
       var allBtn = ev.target.closest ? ev.target.closest('[data-ad-all]') : null;
       if (allBtn) { showAccessDetail_({}, '全アクセス明細'); return; }
       var dateBtn = ev.target.closest ? ev.target.closest('[data-ad-date]') : null;
@@ -1183,6 +1185,40 @@
           (userBtn.getAttribute('data-ad-user-label') || '') + ' のアクセス'
         );
       }
+    }
+
+    /** 登録ログの管理者確認チェックをトグルし、一覧を再取得して並べ替える */
+    function toggleRegistrationLogReviewed_(checkbox) {
+      var id = checkbox.getAttribute('data-log-id');
+      var reviewed = checkbox.checked;
+      checkbox.disabled = true;
+      postGasWithToken({ _path: 'api/admin/registration-log-review', id: id, reviewed: String(reviewed) })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (!data.ok) throw new Error(data.message || data.error || '更新に失敗しました');
+          return reloadRegistrationLogOnly_();
+        })
+        .catch(function(e) {
+          alert(String(e.message || e));
+          checkbox.checked = !reviewed;
+          checkbox.disabled = false;
+        });
+    }
+
+    function reloadRegistrationLogOnly_() {
+      return postGasWithToken({ _path: 'api/admin/registration-log' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(renderRegistrationLog_)
+        .catch(function(e) {
+          var mount = document.getElementById('regLogMount');
+          if (mount) mount.innerHTML = '<li class="error" style="padding:12px 16px;">' + escapeHtml(String(e.message || e)) + '</li>';
+        });
     }
 
     /* ─── アクセス明細モーダル ───────────────────────────────────────── */
@@ -1370,18 +1406,27 @@
         ? logs
             .map(function(r) {
               var target = String(r.kind) === '選手' ? (r.member_number ? '選手番号 ' + r.member_number : '') : String(r.coach_name || '');
+              var reviewed = !!r.reviewed;
+              var nameStyle = reviewed ? '' : 'color:#fca5a5;';
+              var rowStyle = reviewed ? '' : 'background:rgba(252,165,165,0.07);';
               return (
-                '<li style="padding:10px 16px;"><div style="font-weight:600;">' +
+                '<li style="padding:10px 16px;display:flex;gap:10px;align-items:flex-start;' + rowStyle + '">' +
+                '<input type="checkbox" class="reg-log-check" data-log-id="' + attrEsc(r.id) + '" ' +
+                (reviewed ? 'checked' : '') +
+                ' title="管理者確認済み" style="margin-top:3px;flex:0 0 auto;width:17px;height:17px;cursor:pointer;" />' +
+                '<div style="flex:1;min-width:0;">' +
+                '<div style="font-weight:600;' + nameStyle + '">' +
                 escapeHtml(r.display_name || r.line_user_id) +
                 ' <span style="color:#94a3b8;font-weight:400;">' +
                 escapeHtml(r.action === 'new' ? '新規登録' : '紐付け変更') +
+                (reviewed ? '' : ' ・ 未確認') +
                 '</span></div>' +
                 '<div style="font-size:0.78rem;color:#9ccce6;">' +
                 escapeHtml(String(r.registered_at || '')) +
                 ' ・ ' + escapeHtml(String(r.kind || '')) +
                 ' ・ ' + escapeHtml(target) +
                 ' ・ 続柄:' + escapeHtml(String(r.relation || '')) +
-                '</div></li>'
+                '</div></div></li>'
               );
             })
             .join('')
