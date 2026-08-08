@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.34[287e6fe]" />
-  <title>動画ライブラリ 一覧 (v1.0.34[287e6fe])</title>
+  <meta name="regalia-ui-version" content="v1.0.35[cf6b9f4]" />
+  <title>動画ライブラリ 一覧 (v1.0.35[cf6b9f4])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -209,6 +209,13 @@
     .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .dash-card { background: #111827; border: 1px solid #233041; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
     .dash-card-header { background: #0b1220; padding: 12px 16px; border-bottom: 1px solid #233041; font-weight: 600; color: #e5e7eb; }
+    .dash-card--accordion .dash-card-header {
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;
+    }
+    .dash-chevron { font-size: 0.7rem; color: #64748b; transition: transform 0.2s; flex: 0 0 auto; margin-left: 8px; }
+    .dash-card--accordion.collapsed .dash-chevron { transform: rotate(-90deg); }
+    .dash-card--accordion.collapsed .dash-list { display: none; }
+    .dash-card--accordion.collapsed .dash-card-header { border-bottom: none; }
     .dash-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 280px; flex: 1; }
     .dash-list li { border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
     .dash-list li:last-child { border-bottom: none; }
@@ -409,6 +416,7 @@
     body.force-mobile .dash-stat-label { font-size: 1.4rem; margin-bottom: 4px; }
     body.force-mobile .dash-stat-value { font-size: 2.4rem; }
     body.force-mobile .dash-card-header { font-size: 1.6rem; padding: 16px 20px; }
+    body.force-mobile .dash-chevron { font-size: 1.2rem; }
     body.force-mobile .dash-list li { font-size: 1.5rem; }
     body.force-mobile .dash-item-btn { padding: 14px 20px; }
     body.force-mobile .dash-list { max-height: 400px; }
@@ -1444,32 +1452,32 @@
       h += '</div>';
 
       h += '<div class="dash-grid">';
-      
-      h += '<div class="dash-card"><div class="dash-card-header">試合種別フィルタ</div><ul class="dash-list">';
-      h += renderListItems(sortedMatch, 'match');
-      h += '</ul></div>';
 
-      h += '<div class="dash-card"><div class="dash-card-header">対戦相手フィルタ</div><ul class="dash-list">';
-      h += renderListItems(sortedOpponent, 'opponent');
-      h += '</ul></div>';
+      function accordionCard(title, arr, filterType) {
+        return (
+          '<div class="dash-card dash-card--accordion collapsed">' +
+          '<div class="dash-card-header"><span>' + escapeHtml(title) + '</span><span class="dash-chevron">▾</span></div>' +
+          '<ul class="dash-list">' + renderListItems(arr, filterType) + '</ul></div>'
+        );
+      }
 
-      h += '<div class="dash-card"><div class="dash-card-header">投稿年月フィルタ</div><ul class="dash-list">';
-      h += renderListItems(sortedMonth, 'uploadMonth');
-      h += '</ul></div>';
-
-      h += '<div class="dash-card"><div class="dash-card-header">投稿者フィルタ</div><ul class="dash-list">';
-      h += renderListItems(sortedUploader, 'uploader');
-      h += '</ul></div>';
-
-      h += '<div class="dash-card"><div class="dash-card-header">学年フィルタ</div><ul class="dash-list">';
-      h += renderListItems(sortedGrade, 'grade');
-      h += '</ul></div>';
+      h += accordionCard('試合種別フィルタ', sortedMatch, 'match');
+      h += accordionCard('対戦相手フィルタ', sortedOpponent, 'opponent');
+      h += accordionCard('投稿年月フィルタ', sortedMonth, 'uploadMonth');
+      h += accordionCard('投稿者フィルタ', sortedUploader, 'uploader');
+      h += accordionCard('学年フィルタ', sortedGrade, 'grade');
 
       h += '</div></div>';
 
       el.innerHTML = h;
       var panel = el.querySelector('.dashboard-panel');
       if (panel) panel.addEventListener('click', function(ev) {
+        var accHeader = ev.target.closest ? ev.target.closest('.dash-card--accordion > .dash-card-header') : null;
+        if (accHeader) {
+          var card = accHeader.closest('.dash-card--accordion');
+          if (card) card.classList.toggle('collapsed');
+          return;
+        }
         var btn = ev.target.closest ? ev.target.closest('.dash-item-btn') : null;
         if (!btn) return;
         var filterType = btn.getAttribute('data-dash-filter-type') || '';
