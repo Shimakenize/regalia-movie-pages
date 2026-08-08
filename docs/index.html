@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.30[e758577]" />
-  <title>動画ライブラリ 一覧 (v1.0.30[e758577])</title>
+  <meta name="regalia-ui-version" content="v1.0.31[bd1f2d5]" />
+  <title>動画ライブラリ 一覧 (v1.0.31[bd1f2d5])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -170,6 +170,28 @@
     }
     .reg-submit:disabled { opacity: 0.4; cursor: not-allowed; }
     .reg-back { background: none; border: none; color: #64748b; font-size: 0.78rem; cursor: pointer; margin-top: 10px; text-decoration: underline; font-family: inherit; }
+
+    /* アクセスログ 明細モーダル */
+    #access-detail-overlay {
+      position: fixed; inset: 0; background: rgba(6, 10, 16, 0.85);
+      display: none; align-items: center; justify-content: center; z-index: 250; padding: 16px;
+    }
+    .ad-modal {
+      background: #111827; border: 1px solid #2b4258; border-radius: 14px;
+      width: 100%; max-width: 560px; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .ad-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #233041; flex: 0 0 auto; }
+    .ad-modal-title { font-size: 0.98rem; font-weight: 700; color: #fff; }
+    .ad-modal-close { background: none; border: none; color: #94a3b8; font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 4px 8px; }
+    .ad-modal-close:hover { color: #e5e7eb; }
+    .ad-modal-body { overflow-y: auto; flex: 1 1 auto; }
+    .ad-row { padding: 10px 18px; border-bottom: 1px solid #1e293b; font-size: 0.82rem; }
+    .ad-row-main { font-weight: 600; color: #e5e7eb; }
+    .ad-row-sub { color: #9ccce6; font-size: 0.76rem; margin-top: 2px; }
+    .ad-modal-note { padding: 8px 18px; font-size: 0.74rem; color: #64748b; border-top: 1px solid #233041; flex: 0 0 auto; }
+    [data-ad-all], [data-ad-date], [data-ad-user] { cursor: pointer; }
+    [data-ad-date]:hover, [data-ad-user]:hover { background: rgba(46, 211, 198, 0.08); }
+    [data-ad-all]:hover { outline: 1px solid #2ed3c6; }
 
     /* ダッシュボード */
     .dashboard-panel { padding: 8px 12px 32px; color: #e5e7eb; max-width: 1200px; margin: 0 auto; }
@@ -500,6 +522,16 @@
       <div class="reg-error" id="reg-error"></div>
       <button type="button" class="reg-submit" id="reg-submit" onclick="submitRegistration_()" disabled>登録する</button>
       <button type="button" class="reg-back" id="reg-back" style="display:none;" onclick="regBackToKind_()">← 選び直す</button>
+    </div>
+  </div>
+  <div id="access-detail-overlay">
+    <div class="ad-modal">
+      <div class="ad-modal-header">
+        <div class="ad-modal-title" id="adModalTitle">アクセス明細</div>
+        <button type="button" class="ad-modal-close" onclick="hideAccessDetail_()" aria-label="閉じる">×</button>
+      </div>
+      <div class="ad-modal-body" id="adModalBody">読み込み中…</div>
+      <div class="ad-modal-note" id="adModalNote" style="display:none;"></div>
     </div>
   </div>
   <div class="bottom-frame">
@@ -1113,7 +1145,82 @@
         '<div class="dash-card"><div class="dash-card-header">ユーザー別アクセス状況</div><ul class="dash-list" id="usersListMount"><li style="padding:12px 16px;">読み込み中…</li></ul></div>' +
         '<div class="dash-card"><div class="dash-card-header">登録ログ</div><ul class="dash-list" id="regLogMount"><li style="padding:12px 16px;">読み込み中…</li></ul></div>' +
         '</div></div>';
+      var panel = el.querySelector('.dashboard-panel');
+      if (panel) panel.addEventListener('click', onUsersPanelClick_);
       reloadUsersPanel_();
+    }
+
+    function onUsersPanelClick_(ev) {
+      var allBtn = ev.target.closest ? ev.target.closest('[data-ad-all]') : null;
+      if (allBtn) { showAccessDetail_({}, '全アクセス明細'); return; }
+      var dateBtn = ev.target.closest ? ev.target.closest('[data-ad-date]') : null;
+      if (dateBtn) { showAccessDetail_({ date: dateBtn.getAttribute('data-ad-date') }, dateBtn.getAttribute('data-ad-date') + ' のアクセス'); return; }
+      var userBtn = ev.target.closest ? ev.target.closest('[data-ad-user]') : null;
+      if (userBtn) {
+        showAccessDetail_(
+          { line_user_id: userBtn.getAttribute('data-ad-user') },
+          (userBtn.getAttribute('data-ad-user-label') || '') + ' のアクセス'
+        );
+      }
+    }
+
+    /* ─── アクセス明細モーダル ───────────────────────────────────────── */
+
+    function userLabelHtml_(bindLabel, displayName, lineUserId) {
+      var bl = String(bindLabel || '').trim();
+      var dn = String(displayName || '').trim();
+      if (bl && dn && bl !== dn) {
+        return escapeHtml(bl) + '<span style="color:#94a3b8;font-weight:400;">（' + escapeHtml(dn) + '）</span>';
+      }
+      if (bl) return escapeHtml(bl);
+      if (dn) return escapeHtml(dn);
+      return escapeHtml(String(lineUserId || ''));
+    }
+
+    function showAccessDetail_(filters, title) {
+      var ov = document.getElementById('access-detail-overlay');
+      var body = document.getElementById('adModalBody');
+      var note = document.getElementById('adModalNote');
+      document.getElementById('adModalTitle').textContent = title || 'アクセス明細';
+      body.innerHTML = '読み込み中…';
+      note.style.display = 'none';
+      if (ov) ov.style.display = 'flex';
+      var reqFields = { _path: 'api/admin/access-log-detail' };
+      Object.keys(filters || {}).forEach(function(k) { reqFields[k] = filters[k]; });
+      postGasWithToken(reqFields)
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (!data || !data.ok) throw new Error((data && (data.message || data.error)) || '取得に失敗しました');
+          var logs = data.logs || [];
+          body.innerHTML = logs.length
+            ? logs
+                .map(function(r) {
+                  return (
+                    '<div class="ad-row"><div class="ad-row-main">' +
+                    userLabelHtml_(r.bind_label, r.display_name, r.line_user_id) +
+                    ' <span style="color:#94a3b8;font-weight:400;">(' + escapeHtml(r.kind || '') + ')</span></div>' +
+                    '<div class="ad-row-sub">' + escapeHtml(String(r.accessed_at || '')) +
+                    ' ・ ' + escapeHtml(String(r.path || '-')) + '</div></div>'
+                  );
+                })
+                .join('')
+            : '<div class="ad-row" style="color:#94a3b8;">該当するアクセス記録がありません</div>';
+          if (data.truncated) {
+            note.style.display = '';
+            note.textContent = '該当 ' + data.total_matched + ' 件中 最新 ' + logs.length + ' 件のみ表示しています。';
+          }
+        })
+        .catch(function(e) {
+          body.innerHTML = '<div class="ad-row error">' + escapeHtml(String(e.message || e)) + '</div>';
+        });
+    }
+
+    function hideAccessDetail_() {
+      var ov = document.getElementById('access-detail-overlay');
+      if (ov) ov.style.display = 'none';
     }
 
     function reloadUsersPanel_() {
@@ -1149,7 +1256,7 @@
       var sum = document.getElementById('usersSummaryMount');
       if (sum) {
         sum.innerHTML =
-          '<div class="dash-stat"><div class="dash-stat-label">総アクセス数</div><div class="dash-stat-value">' +
+          '<div class="dash-stat" data-ad-all="1" title="クリックで明細を表示"><div class="dash-stat-label">総アクセス数</div><div class="dash-stat-value">' +
           (data.total_count || 0) +
           '</div></div>' +
           '<div class="dash-stat"><div class="dash-stat-label">ユニークユーザー数</div><div class="dash-stat-value">' +
@@ -1170,7 +1277,8 @@
             .map(function(r) {
               var pct = Math.round((r.count / max) * 100);
               return (
-                '<div style="display:flex;align-items:center;gap:8px;padding:3px 16px;font-size:0.78rem;">' +
+                '<div data-ad-date="' + attrEsc(r.date) + '" title="クリックで明細を表示" ' +
+                'style="display:flex;align-items:center;gap:8px;padding:3px 16px;font-size:0.78rem;border-radius:6px;">' +
                 '<span style="width:70px;flex:0 0 auto;color:#9ccce6;">' + escapeHtml(r.date) + '</span>' +
                 '<span style="flex:1;background:#0b1220;border-radius:4px;overflow:hidden;height:14px;">' +
                 '<span style="display:block;height:100%;width:' + pct + '%;background:#2ed3c6;"></span></span>' +
@@ -1186,9 +1294,12 @@
         list.innerHTML = users.length
           ? users
               .map(function(u) {
+                var label = userLabelHtml_(u.bind_label, u.display_name, u.line_user_id);
                 return (
-                  '<li style="padding:10px 16px;"><div style="font-weight:600;">' +
-                  escapeHtml(u.bind_label || u.display_name || u.line_user_id) +
+                  '<li data-ad-user="' + attrEsc(u.line_user_id) + '" data-ad-user-label="' +
+                  attrEsc(String(u.bind_label || u.display_name || u.line_user_id)) +
+                  '" title="クリックで明細を表示" style="padding:10px 16px;">' +
+                  '<div style="font-weight:600;">' + label +
                   ' <span style="color:#94a3b8;font-weight:400;">(' + escapeHtml(u.kind || '') + ')</span></div>' +
                   '<div style="font-size:0.78rem;color:#9ccce6;">最終アクセス: ' +
                   escapeHtml(u.last_accessed_at || '-') +
