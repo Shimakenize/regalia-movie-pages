@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="regalia-ui-version" content="v1.0.38[470950b]" />
-  <title>動画ライブラリ 一覧 (v1.0.38[470950b])</title>
+  <meta name="regalia-ui-version" content="v1.0.39[3497458]" />
+  <title>動画ライブラリ 一覧 (v1.0.39[3497458])</title>
   <!-- 下部のメイン script が失敗しても、メタからタブ名・チップを同期する（CORS で config が取れない場合も） -->
   <script>
     (function () {
@@ -667,6 +667,33 @@
       });
       return Object.keys(set).sort();
     }
+    /** 「BANFF・韮崎SC・NextWay」のように1試合に複数チームが含まれる対戦相手欄をチーム単位に分割する */
+    function splitOpponents(str) {
+      return String(str || '')
+        .split(/[・、]/)
+        .map(function(s) { return s.trim(); })
+        .filter(Boolean);
+    }
+    /** 対戦相手フィルタの選択肢はチーム単位（分割後）でユニーク化する */
+    function uniqueOpponentsFrom(data) {
+      var set = {};
+      var out = [];
+      data.forEach(function(row) {
+        splitOpponents(row['対戦相手']).forEach(function(v) {
+          if (!set[v]) { set[v] = true; out.push(v); }
+        });
+      });
+      return out.sort();
+    }
+    /** 対戦相手フィルタの一致判定（複数チーム同居行は、いずれかのチーム名と一致すればヒット） */
+    function rowMatchesOpponentFilter(row, selectedLower) {
+      if (!selectedLower) return true;
+      var parts = splitOpponents(row['対戦相手']);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].toLowerCase() === selectedLower) return true;
+      }
+      return false;
+    }
     /** 検索窓の文字列をスペース区切りでキーワードに分割し、行がすべてのキーワードを含むか（AND） */
     function rowMatchesSearchKeywords(row, searchValue) {
       var keywords = (searchValue || '').toLowerCase().split(/\s+/).filter(function(s) { return s.length > 0; });
@@ -735,7 +762,7 @@
       var opp = document.getElementById('filterOpponent');
       var current = opp.value;
       opp.innerHTML = '<option value="">すべて</option>';
-      uniqueFrom(data, '対戦相手').forEach(function(v) {
+      uniqueOpponentsFrom(data).forEach(function(v) {
         var o = document.createElement('option');
         o.value = v; o.textContent = v;
         if (v === current) o.selected = true;
@@ -752,7 +779,7 @@
         if (q && !rowMatchesSearchKeywords(row, q)) return false;
         if (grade && (row['学年'] || '').toLowerCase() !== grade) return false;
         if (match && (row['試合名'] || '').toLowerCase() !== match) return false;
-        if (opponent && (row['対戦相手'] || '').toLowerCase() !== opponent) return false;
+        if (!rowMatchesOpponentFilter(row, opponent)) return false;
         return true;
       });
     }
@@ -801,7 +828,7 @@
         if (q && !rowMatchesSearchKeywords(row, q)) return false;
         if (grade && (row['学年'] || '').toLowerCase() !== grade) return false;
         if (match && (row['試合名'] || '').toLowerCase() !== match) return false;
-        if (opponent && (row['対戦相手'] || '').toLowerCase() !== opponent) return false;
+        if (!rowMatchesOpponentFilter(row, opponent)) return false;
         if (uploader && (row['投稿者'] || '').toLowerCase() !== uploader) return false;
         if (uploadMonth && (row['投稿年月'] || '').toLowerCase() !== uploadMonth) return false;
         return true;
@@ -1458,7 +1485,12 @@
         if (o === '不明') unknownOpponent++;
 
         counts.match[m] = (counts.match[m] || 0) + 1;
-        counts.opponent[o] = (counts.opponent[o] || 0) + 1;
+        // 1本の動画に複数チームが同居する行（例: 「BANFF・韮崎SC・NextWay」）はチーム単位で集計する
+        var oParts = o === '不明' ? ['不明'] : splitOpponents(o);
+        if (!oParts.length) oParts = [o];
+        oParts.forEach(function(op) {
+          counts.opponent[op] = (counts.opponent[op] || 0) + 1;
+        });
         counts.month[mo] = (counts.month[mo] || 0) + 1;
         counts.uploader[u] = (counts.uploader[u] || 0) + 1;
         counts.grade[g] = (counts.grade[g] || 0) + 1;
